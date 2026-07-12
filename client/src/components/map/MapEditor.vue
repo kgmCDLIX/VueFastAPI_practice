@@ -1,5 +1,5 @@
 <script setup> // Карта с трубами
-import { usePipeStore } from '../stores/pipeStore'
+import { usePipeStore } from '../../stores/networkStore.js'
 
 const pipeStore = usePipeStore()
 </script>
