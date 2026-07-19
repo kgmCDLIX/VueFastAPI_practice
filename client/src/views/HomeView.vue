@@ -14,7 +14,6 @@ import ObjectPassportPanel from '../components/passport/ObjectPassportPanel.vue'
 
           <v-card-subtitle>
             Прототип интерфейса для просмотра скважин, труб и частей труб.
-            Позже здесь будет интеграция с QGIS и PostgreSQL/PostGIS.
           </v-card-subtitle>
         </v-card>
       </v-col>
