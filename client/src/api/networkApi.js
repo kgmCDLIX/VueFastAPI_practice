@@ -1,31 +1,23 @@
 const API_URL = 'http://127.0.0.1:8000'
 
-export async function getVertices() {
-  const response = await fetch(`${API_URL}/vertices/`)
+async function request(url, errorMessage) {
+  const response = await fetch(url)
 
   if (!response.ok) {
-    throw new Error('Ошибка при загрузке вершин')
+    throw new Error(errorMessage)
   }
 
   return response.json()
 }
 
-export async function getPipes() {
-  const response = await fetch(`${API_URL}/pipes/`)
-
-  if (!response.ok) {
-    throw new Error('Ошибка при загрузке труб')
-  }
-
-  return response.json()
+export function getVertices() {
+  return request(`${API_URL}/vertices/`, 'Ошибка при загрузке вершин')
 }
 
-export async function getPipeParts() {
-  const response = await fetch(`${API_URL}/pipe-parts/`)
+export function getPipes() {
+  return request(`${API_URL}/pipes/`, 'Ошибка при загрузке труб')
+}
 
-  if (!response.ok) {
-    throw new Error('Ошибка при загрузке частей труб')
-  }
-
-  return response.json()
+export function getPipeParts() {
+  return request(`${API_URL}/pipe-parts/`, 'Ошибка при загрузке частей труб')
 }

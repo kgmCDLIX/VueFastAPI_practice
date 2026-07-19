@@ -1,6 +1,15 @@
 <script setup>
+import { onMounted } from 'vue'
+
 import MapEditor from '../components/map/MapEditor.vue'
 import ObjectPassportPanel from '../components/passport/ObjectPassportPanel.vue'
+import { useNetworkStore } from '../stores/networkStore'
+
+const networkStore = useNetworkStore()
+
+onMounted(() => {
+  networkStore.loadNetworkData()
+})
 </script>
 
 <template>
@@ -14,6 +23,7 @@ import ObjectPassportPanel from '../components/passport/ObjectPassportPanel.vue'
 
           <v-card-subtitle>
             Прототип интерфейса для просмотра скважин, труб и частей труб.
+            Данные загружаются с FastAPI backend.
           </v-card-subtitle>
         </v-card>
       </v-col>
