@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ..schemas.pipe_part import PipePartCreate, PipePartRead
+from app.schemas.pipe_part import PipePartCreate, PipePartRead
 
 
 router = APIRouter(
