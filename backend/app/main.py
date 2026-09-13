@@ -1,12 +1,20 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
+from .database import engine
 from .routers import auth, pipe_parts, pipes, vertices
+
+
 app = FastAPI()
+
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -15,12 +23,21 @@ app.add_middleware(
 
 @app.get("/")
 def root():
-    return {"message": "Backend is working"}
+    return {
+        "message": "Backend is working",
+    }
 
 
-@app.get("/api/hello")
-def hello():
-    return {"message": "Привет из FastAPI"}
+@app.get("/db-check")
+def db_check():
+    with engine.connect() as connection:
+        result = connection.execute(text("SELECT 1"))
+
+        return {
+            "database": "connected",
+            "result": result.scalar_one(),
+        }
+
 
 app.include_router(auth.router)
 app.include_router(pipes.router)
