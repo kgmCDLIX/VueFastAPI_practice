@@ -2,8 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from .database import engine
+from .database import Base, engine
 from .routers import auth, pipe_parts, pipes, vertices
+from . import models
+
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI()
 
 
 app = FastAPI()
