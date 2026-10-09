@@ -20,11 +20,6 @@ onMounted(() => {
           <v-card-title class="text-h4">
             Редактор трубопроводной сети
           </v-card-title>
-
-          <v-card-subtitle>
-            Прототип интерфейса для просмотра скважин, труб и частей труб.
-            Данные загружаются с FastAPI backend.
-          </v-card-subtitle>
         </v-card>
       </v-col>
     </v-row>
