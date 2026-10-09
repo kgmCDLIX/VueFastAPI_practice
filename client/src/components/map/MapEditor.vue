@@ -1,134 +1,329 @@
 <script setup>
-import { computed } from 'vue'
-import { useNetworkStore } from '../../stores/networkStore'
+import {
+  onMounted,
+  onBeforeUnmount,
+  ref,
+  watch,
+} from 'vue'
+
+import Map from 'ol/Map'
+import View from 'ol/View'
+
+import TileLayer from 'ol/layer/Tile'
+import VectorLayer from 'ol/layer/Vector'
+
+import OSM from 'ol/source/OSM'
+import VectorSource from 'ol/source/Vector'
+
+import GeoJSON from 'ol/format/GeoJSON'
+
+import Select from 'ol/interaction/Select'
+import { click } from 'ol/events/condition'
+
+import {
+  Style,
+  Stroke,
+  Fill,
+  Circle as CircleStyle,
+} from 'ol/style'
+
+import 'ol/ol.css'
+
+import { useNetworkStore } from '@/stores/networkStore'
+
 
 const networkStore = useNetworkStore()
 
-const pipe = computed(() => networkStore.pipes[0])
-const firstVertex = computed(() => networkStore.vertices[0])
-const secondVertex = computed(() => networkStore.vertices[1])
+const mapElement = ref(null)
 
-const hasData = computed(() => {
-  return firstVertex.value && secondVertex.value && pipe.value
+let map = null
+let vectorSource = null
+let vectorLayer = null
+let selectInteraction = null
+
+
+// -----------------------------
+// СТИЛИ ОБЪЕКТОВ
+// -----------------------------
+
+function getFeatureStyle(feature) {
+  const objectType = feature.get('object_type')
+
+
+  // Скважина / вершина
+  if (objectType === 'vertex') {
+    return new Style({
+      image: new CircleStyle({
+        radius: 9,
+
+        fill: new Fill({
+          color: '#43a047',
+        }),
+
+        stroke: new Stroke({
+          color: '#ffffff',
+          width: 2,
+        }),
+      }),
+    })
+  }
+
+
+  // Труба
+  if (objectType === 'pipe') {
+    return new Style({
+      stroke: new Stroke({
+        color: '#555555',
+        width: 7,
+      }),
+    })
+  }
+
+
+  // Часть трубы
+  if (objectType === 'pipe_part') {
+    return new Style({
+      stroke: new Stroke({
+        color: '#2196f3',
+        width: 3,
+        lineDash: [10, 8],
+      }),
+    })
+  }
+
+
+  return new Style({
+    stroke: new Stroke({
+      color: '#999999',
+      width: 2,
+    }),
+  })
+}
+
+
+// -----------------------------
+// ЗАГРУЗКА GEOJSON НА КАРТУ
+// -----------------------------
+
+function renderNetwork() {
+  if (!vectorSource) {
+    return
+  }
+
+  vectorSource.clear()
+
+
+  if (!networkStore.networkGeoJson) {
+    return
+  }
+
+
+  const features = new GeoJSON().readFeatures(
+    networkStore.networkGeoJson,
+    {
+      dataProjection: 'EPSG:4326',
+      featureProjection: 'EPSG:3857',
+    }
+  )
+
+
+  vectorSource.addFeatures(features)
+
+
+  if (features.length > 0 && map) {
+    map.getView().fit(
+      vectorSource.getExtent(),
+      {
+        padding: [70, 70, 70, 70],
+        maxZoom: 16,
+        duration: 400,
+      }
+    )
+  }
+}
+
+
+// -----------------------------
+// СОЗДАНИЕ КАРТЫ
+// -----------------------------
+
+onMounted(() => {
+  vectorSource = new VectorSource()
+
+
+  vectorLayer = new VectorLayer({
+    source: vectorSource,
+    style: getFeatureStyle,
+  })
+
+
+  map = new Map({
+    target: mapElement.value,
+
+    layers: [
+
+      // Обычная карта OpenStreetMap
+      new TileLayer({
+        source: new OSM(),
+      }),
+
+      // Наши трубы и скважины
+      vectorLayer,
+    ],
+
+    view: new View({
+      center: [0, 0],
+      zoom: 2,
+    }),
+  })
+
+
+  // -----------------------------
+  // ВЫБОР ОБЪЕКТА МЫШКОЙ
+  // -----------------------------
+
+  selectInteraction = new Select({
+    condition: click,
+
+    layers: [
+      vectorLayer,
+    ],
+
+    hitTolerance: 8,
+  })
+
+
+  map.addInteraction(
+    selectInteraction
+  )
+
+
+  selectInteraction.on(
+    'select',
+    (event) => {
+      const feature =
+        event.selected[0]
+
+
+      if (!feature) {
+        networkStore.clearSelectedObject()
+        return
+      }
+
+
+      const properties =
+        feature.getProperties()
+
+
+      const {
+        geometry,
+        object_type,
+        ...data
+      } = properties
+
+
+      let type = object_type
+
+
+      // Наш ObjectPassportPanel
+      // уже использует такое имя
+      if (object_type === 'pipe_part') {
+        type = 'pipePart'
+      }
+
+
+      networkStore.selectObject(
+        type,
+        data
+      )
+    }
+  )
+
+
+  renderNetwork()
+})
+
+
+// -----------------------------
+// ЕСЛИ GEOJSON ЗАГРУЗИЛСЯ
+// ПОСЛЕ СОЗДАНИЯ КАРТЫ
+// -----------------------------
+
+watch(
+  () => networkStore.networkGeoJson,
+
+  () => {
+    renderNetwork()
+  },
+
+  {
+    deep: true,
+  }
+)
+
+
+// -----------------------------
+// УНИЧТОЖЕНИЕ КАРТЫ
+// -----------------------------
+
+onBeforeUnmount(() => {
+  if (map) {
+    map.setTarget(undefined)
+    map = null
+  }
 })
 </script>
 
-<template>
-  <v-card min-height="560">
-    <v-card-title class="d-flex align-center justify-space-between">
-      <span>Схема сети</span>
 
-      <v-chip color="primary" variant="tonal">
-        Данные с backend
-      </v-chip>
+<template>
+  <v-card class="pa-4">
+    <v-card-title>
+      Карта трубопроводной сети
     </v-card-title>
 
-    <v-card-subtitle>
-      Кликните по скважине, трубе или части трубы, чтобы открыть паспорт.
-    </v-card-subtitle>
 
-    <v-card-text>
-      <v-progress-linear
-        v-if="networkStore.isLoading"
-        indeterminate
-        color="primary"
-        class="mb-4"
-      />
+    <div
+      v-if="networkStore.isLoading"
+      class="state-message"
+    >
+      Загрузка сети...
+    </div>
 
-      <v-alert
-        v-if="networkStore.error"
-        type="error"
-        variant="tonal"
-        class="mb-4"
-        :text="networkStore.error"
-      />
 
-      <v-alert
-        v-if="!networkStore.isLoading && !hasData"
-        type="warning"
-        variant="tonal"
-        title="Нет данных"
-        text="Backend работает, но данные для схемы пока не пришли или их недостаточно."
-      />
+    <div
+      v-else-if="networkStore.error"
+      class="state-message error-message"
+    >
+      {{ networkStore.error }}
+    </div>
 
-      <v-sheet
-        v-if="hasData"
-        rounded="lg"
-        border
-        class="pa-6 d-flex align-center justify-space-between"
-        min-height="360"
-      >
-        <v-card
-          width="180"
-          color="blue-lighten-5"
-          border
-          class="text-center"
-          @click="networkStore.selectObject('vertex', firstVertex)"
-        >
-          <v-card-text>
-            <v-icon icon="mdi-map-marker" size="32" class="mb-2" />
 
-            <div class="font-weight-bold">
-              {{ firstVertex.name }}
-            </div>
-
-            <v-chip size="small" color="success" variant="tonal" class="mt-2">
-              {{ firstVertex.condition }}
-            </v-chip>
-          </v-card-text>
-        </v-card>
-
-        <v-sheet class="flex-grow-1 mx-4">
-          <v-row dense>
-            <v-col
-              v-for="part in networkStore.pipeParts"
-              :key="part.id"
-              cols="6"
-            >
-              <v-btn
-                block
-                height="52"
-                color="grey-darken-3"
-                variant="flat"
-                @click="networkStore.selectObject('pipe_part', part)"
-              >
-                {{ part.name }}
-              </v-btn>
-            </v-col>
-          </v-row>
-
-          <v-btn
-            block
-            class="mt-4"
-            color="primary"
-            variant="tonal"
-            prepend-icon="mdi-pipe"
-            @click="networkStore.selectObject('pipe', pipe)"
-          >
-            Открыть паспорт всей трубы
-          </v-btn>
-        </v-sheet>
-
-        <v-card
-          width="180"
-          color="blue-lighten-5"
-          border
-          class="text-center"
-          @click="networkStore.selectObject('vertex', secondVertex)"
-        >
-          <v-card-text>
-            <v-icon icon="mdi-map-marker" size="32" class="mb-2" />
-
-            <div class="font-weight-bold">
-              {{ secondVertex.name }}
-            </div>
-
-            <v-chip size="small" color="success" variant="tonal" class="mt-2">
-              {{ secondVertex.condition }}
-            </v-chip>
-          </v-card-text>
-        </v-card>
-      </v-sheet>
-    </v-card-text>
+    <div
+      ref="mapElement"
+      class="network-map"
+    />
   </v-card>
 </template>
+
+
+<style scoped>
+.network-map {
+  width: 100%;
+  height: 600px;
+
+  border: 1px solid #dddddd;
+  border-radius: 8px;
+
+  overflow: hidden;
+}
+
+.state-message {
+  padding: 20px;
+  text-align: center;
+  color: #666666;
+}
+
+.error-message {
+  color: #d32f2f;
+}
+</style>

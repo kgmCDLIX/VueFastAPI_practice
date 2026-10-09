@@ -4,6 +4,7 @@ import {
   getVertices,
   getPipes,
   getPipeParts,
+  getNetworkGeoJson,
 } from '../api/networkApi'
 
 export const useNetworkStore = defineStore('networkStore', {
@@ -13,6 +14,8 @@ export const useNetworkStore = defineStore('networkStore', {
     vertices: [],
     pipes: [],
     pipeParts: [],
+
+    networkGeoJson: null,
 
     isLoading: false,
     error: null,
@@ -24,15 +27,22 @@ export const useNetworkStore = defineStore('networkStore', {
       this.error = null
 
       try {
-        const [vertices, pipes, pipeParts] = await Promise.all([
+        const [
+          vertices,
+          pipes,
+          pipeParts,
+          networkGeoJson,
+        ] = await Promise.all([
           getVertices(),
           getPipes(),
           getPipeParts(),
+          getNetworkGeoJson(),
         ])
 
         this.vertices = vertices
         this.pipes = pipes
         this.pipeParts = pipeParts
+        this.networkGeoJson = networkGeoJson
       } catch (error) {
         this.error = error.message
       } finally {

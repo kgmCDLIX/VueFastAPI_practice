@@ -21,3 +21,15 @@ export function getPipes() {
 export function getPipeParts() {
   return request(`${API_URL}/pipe-parts/`, 'Ошибка при загрузке частей труб')
 }
+
+export async function getNetworkGeoJson() {
+  const response = await fetch(
+    'http://127.0.0.1:8000/geo/network'
+  )
+
+  if (!response.ok) {
+    throw new Error('Не удалось загрузить геометрию сети')
+  }
+
+  return response.json()
+}

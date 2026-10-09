@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from .database import Base, engine
-from .routers import auth, pipe_parts, pipes, vertices
+from .routers import auth, pipe_parts, pipes, vertices, geo
 from . import models
 
 
@@ -49,3 +49,4 @@ app.include_router(auth.router)
 app.include_router(pipes.router)
 app.include_router(vertices.router)
 app.include_router(pipe_parts.router)
+app.include_router(geo.router)

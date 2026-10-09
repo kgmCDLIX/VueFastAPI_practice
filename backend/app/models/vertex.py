@@ -4,7 +4,8 @@ from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-
+from geoalchemy2 import Geometry
+from geoalchemy2.elements import WKBElement
 
 class Vertex(Base):
     __tablename__ = "vertices"
@@ -13,6 +14,11 @@ class Vertex(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     type: Mapped[str] = mapped_column(String(100), nullable=False)
     condition: Mapped[str | None] = mapped_column(String(100), nullable=True)
+
+    geometry: Mapped[WKBElement | None] = mapped_column(
+        Geometry(geometry_type="POINT", srid=4326),
+        nullable=True,
+    )
 
     pipes_started: Mapped[list["Pipe"]] = relationship(
         "Pipe",
