@@ -140,3 +140,63 @@ export async function updatePipe(
 
   return response.json()
 }
+
+export async function createNode(data) {
+  const response = await fetch(
+    `${API_URL}/geo/nodes`,
+    {
+      method: 'POST',
+
+      headers: {
+        'Content-Type': 'application/json',
+      },
+
+      body: JSON.stringify(data),
+    }
+  )
+
+  if (!response.ok) {
+    const errorData = await response.json()
+
+    throw new Error(
+      getApiErrorMessage(
+        errorData,
+        'Не удалось создать объект'
+      )
+    )
+  }
+
+  return response.json()
+}
+
+
+export async function updateNode(
+  vertexId,
+  data
+) {
+  const response = await fetch(
+    `${API_URL}/geo/nodes/${vertexId}`,
+    {
+      method: 'PATCH',
+
+      headers: {
+        'Content-Type': 'application/json',
+      },
+
+      body: JSON.stringify(data),
+    }
+  )
+
+  if (!response.ok) {
+    const errorData = await response.json()
+
+    throw new Error(
+      getApiErrorMessage(
+        errorData,
+        'Не удалось изменить объект'
+      )
+    )
+  }
+
+  return response.json()
+}

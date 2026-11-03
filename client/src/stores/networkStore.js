@@ -8,6 +8,8 @@ import {
 
   createPipe as createPipeRequest,
   updatePipe as updatePipeRequest,
+  createNode as createNodeRequest,
+  updateNode as updateNodeRequest,
 } from '../api/networkApi'
 
 
@@ -142,6 +144,74 @@ export const useNetworkStore = defineStore(
       clearSelectedObject() {
         this.selectedObject = null
       },
+
+      async createNode(data) {
+  this.error = null
+
+  try {
+    const createdNode =
+      await createNodeRequest(data)
+
+    await this.loadNetworkData()
+
+    const feature =
+      this.networkGeoJson?.features.find(
+        item =>
+          item.properties?.object_type === 'vertex'
+          &&
+          item.properties?.id === createdNode.id
+      )
+
+    if (feature) {
+      this.selectObject(
+        'vertex',
+        feature.properties
+      )
+    }
+
+    return createdNode
+
+  } catch (error) {
+    this.error = error.message
+    throw error
+  }
+},
+
+
+async updateNode(
+  vertexId,
+  data
+) {
+  this.error = null
+
+  try {
+    await updateNodeRequest(
+      vertexId,
+      data
+    )
+
+    await this.loadNetworkData()
+
+    const feature =
+      this.networkGeoJson?.features.find(
+        item =>
+          item.properties?.object_type === 'vertex'
+          &&
+          item.properties?.id === vertexId
+      )
+
+    if (feature) {
+      this.selectObject(
+        'vertex',
+        feature.properties
+      )
+    }
+
+  } catch (error) {
+    this.error = error.message
+    throw error
+  }
+},
     },
   }
 )
